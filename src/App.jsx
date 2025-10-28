@@ -4,7 +4,7 @@ import AITutor from './components/AITutor';
 import AdaptiveProfilePanel from './components/AdaptiveProfilePanel';
 import InteractivePractice from './components/InteractivePractice';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowDownCircle, ShieldCheck, Globe2 } from 'lucide-react';
+import { ArrowDownCircle, ShieldCheck, Globe2, Zap } from 'lucide-react';
 
 function usePersistentState(key, initialValue) {
   const [state, setState] = useState(() => {
@@ -34,11 +34,27 @@ export default function App() {
   });
   const [unlocked, setUnlocked] = useState(false);
 
+  // Auto-enable performance mode for low-power or reduced-motion users
+  const defaultPerf = (() => {
+    try {
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const lowMem = (navigator.deviceMemory && navigator.deviceMemory <= 4) || false;
+      const lowThreads = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || false;
+      return !!(reduce || lowMem || lowThreads);
+    } catch {
+      return false;
+    }
+  })();
+  const [performanceMode, setPerformanceMode] = usePersistentState('ai-mentor-perf', defaultPerf);
+
   // Simulate hidden background update unlock
   useEffect(() => {
     const t = setTimeout(() => setUnlocked(true), 2500);
     const t2 = setTimeout(() => setUnlocked(false), 6500);
-    return () => { clearTimeout(t); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t);
+      clearTimeout(t2);
+    };
   }, []);
 
   const onSignal = (delta) => {
@@ -56,15 +72,35 @@ export default function App() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const bg = useMemo(
-    () => 'bg-gradient-to-br from-[#070b14] via-[#0b1326] to-[#0a0f1f]',
-    []
-  );
+  const bg = useMemo(() => 'bg-gradient-to-br from-[#070b14] via-[#0b1326] to-[#0a0f1f]', []);
 
   return (
-    <div className={`${bg} min-h-screen text-white`}>        
+    <div className={`${bg} min-h-screen text-white`}>
+      {/* Performance toggle */}
+      <div className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#0b1326]/70 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2 text-xs text-slate-300">
+          <div className="flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-cyan-300" />
+            <span>Performance mode</span>
+          </div>
+          <button
+            onClick={() => setPerformanceMode((v) => !v)}
+            className={`relative inline-flex h-6 w-10 items-center rounded-full transition ${
+              performanceMode ? 'bg-cyan-600/60' : 'bg-white/10'
+            }`}
+            aria-pressed={performanceMode}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                performanceMode ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-        <Hero3D onStart={startLearning} />
+        <Hero3D onStart={startLearning} disable3D={performanceMode} />
 
         <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-5">
           <div id="mentor" className="md:col-span-3">

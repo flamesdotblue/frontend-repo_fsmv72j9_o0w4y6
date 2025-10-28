@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Mic, MicOff, Volume2, Send, Sparkles } from 'lucide-react';
 
 function useSpeech() {
@@ -43,7 +43,7 @@ function useSpeech() {
     try {
       const utter = new SpeechSynthesisUtterance(text);
       utter.rate = 1.02;
-      utter.pitch = 1.05;
+      utter.pitch = 1.04;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
     } catch {}
@@ -53,6 +53,7 @@ function useSpeech() {
 }
 
 export default function AITutor({ onProfileSignal }) {
+  const shouldReduceMotion = useReducedMotion();
   const { listening, transcript, start, stop, speak } = useSpeech();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
@@ -72,13 +73,13 @@ export default function AITutor({ onProfileSignal }) {
     onProfileSignal?.({ motivation: +0.02, focus: +0.03 });
     setMessages((m) => [...m, { role: 'user', text }]);
 
-    // Simulate streaming AI response locally
+    // Simulate streaming AI response locally (fewer ticks to reduce CPU)
     const full = `Love that! I can teach this using your favorite style. Here is a quick, clear breakdown with a small challenge to test mastery.`;
     setStreaming(true);
     setMessages((m) => [...m, { role: 'ai', text: '' }]);
     let idx = 0;
     const interval = setInterval(() => {
-      idx += 3;
+      idx += 4; // larger chunk, fewer updates
       setMessages((m) => {
         const copy = [...m];
         copy[copy.length - 1] = { role: 'ai', text: full.slice(0, idx) };
@@ -89,7 +90,7 @@ export default function AITutor({ onProfileSignal }) {
         setStreaming(false);
         speak(full);
       }
-    }, 30);
+    }, 50);
   };
 
   useEffect(() => {
@@ -118,20 +119,19 @@ export default function AITutor({ onProfileSignal }) {
         {messages.map((m, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 6 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-2 max-w-[90%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
+            transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
+            className={`${
               m.role === 'ai'
-                ? 'bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-slate-100 ring-1 ring-cyan-300/20'
-                : 'ml-auto bg-white/10 text-slate-100 ring-1 ring-white/10'
+                ? 'mb-2 max-w-[90%] rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-500/10 px-3 py-2 text-sm leading-relaxed text-slate-100 ring-1 ring-cyan-300/20'
+                : 'mb-2 ml-auto max-w-[90%] rounded-lg bg-white/10 px-3 py-2 text-sm leading-relaxed text-slate-100 ring-1 ring-white/10'
             }`}
           >
             {m.text}
           </motion.div>
         ))}
-        {streaming && (
-          <div className="mt-1 h-3 w-12 animate-pulse rounded bg-cyan-400/30" />
-        )}
+        {streaming && <div className="mt-1 h-3 w-12 animate-pulse rounded bg-cyan-400/30" />}
         <div ref={endRef} />
       </div>
 
