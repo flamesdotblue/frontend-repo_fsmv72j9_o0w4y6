@@ -3,6 +3,7 @@ import Hero3D from './components/Hero3D';
 import AITutor from './components/AITutor';
 import AdaptiveProfilePanel from './components/AdaptiveProfilePanel';
 import InteractivePractice from './components/InteractivePractice';
+import ProfileSection from './components/ProfileSection';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowDownCircle, ShieldCheck, Globe2, Zap } from 'lucide-react';
 
@@ -114,6 +115,9 @@ export default function App() {
         <div className="mt-8">
           <InteractivePractice onSignal={onSignal} />
         </div>
+
+        {/* New: Profile section powered by open sources (GitHub) */}
+        <ProfileSection />
 
         <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
